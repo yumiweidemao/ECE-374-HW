@@ -1,0 +1,151 @@
+% ---------
+%  Compile with "pdflatex hw0".
+% --------
+%!TEX TS-program = pdflatex
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[11pt]{article}
+\usepackage{jeffe,handout,graphicx}
+\usepackage[utf8]{inputenc}		% Allow some non-ASCII Unicode in source
+
+% =========================================================
+%   Define common stuff for solution headers
+% =========================================================
+\Class{CS/ECE 374}
+\Semester{Spring 2023}
+\Authors{1}
+\AuthorOne{William Cheng}{shihuac2@illinois.edu}
+%\Section{}
+
+% =========================================================
+\begin{document}
+
+% ---------------------------------------------------------
+
+
+\HomeworkHeader{5}{1}	% homework number, problem number
+
+\begin{solution}
+First, sort the arrays $A, B$ using $A$ as the key, in ascending order. In other words, sort the intervals according to their starting point. This can be done in $O(n\log{n})$ time using mergesort or quicksort.\\
+After sorting, divide the intervals into two halves $A_l, B_l$ and $A_r, B_r$. Suppose we already know the maximum overlap length of these two halves. Then the maximum overlap length of $A,B$ is the maximum of:
+\begin{enumerate}[i.]
+\item The maximum overlap length of $(A_l, B_l)$.
+\item The maximum overlap length of $(A_r, B_r)$.
+\item The maximum overlap length of two intervals such that one is taken from $(A_l, B_l)$ and the other is taken from $(A_r, B_r)$.
+\end{enumerate}
+For case (iii), let $(a_l, b_l)\in(A_l, B_l)$ and $(a_r, b_r)\in(A_r, B_r)$ be the two intervals with maximum overlap length. Then $a_l<a_r$ because the array is sorted. Therefore, the overlap interval must start with $a_r$. It ends with $min(b_l, b_r)$. If $b_l$ is maximized, then we only need to search once through $(A_r, B_r)$ to find a maximum $min(b_l, b_r)-a_r$, which is the maximum overlap length indicated in (iii). Finding a maximum $b_l$ requires $O(|B_l|)$ time, and searching through $(A_r, B_r)$ requires $O(|B_r|)$ time. The sum is $O(|B_l|)+O(|B_r|)\leq O(|B|)=O(n)$ time. Finding the maximum of the three cases above takes $O(1)$ time, so the total cost for the algorithm without recursion is $O(n)$. The base case is when $n=1$, there is only one interval and no overlap so the algorithm returns $0$. The algorithm is on the next page.
+\begin{algo}
+	\textsc{\textul{MaxOverlapIntervals(\emph{A, B}):}}\+
+\\	sort \emph{A,B} in ascending order using \emph{A} as key
+\\	$n\gets \emph{A.length}$
+\\	$\_, (a_i, b_i), (a_j, b_j) \gets \textsc{Recurse(\emph{A, B, $n$})}$
+\\	return $(a_i, b_i), (a_j, b_j)$\-
+\\\\	\textul{\textsc{Recurse(\emph{A, B, $n$}):}}\+
+\\	if $n \leq 1$\+
+\\	return $0$, \emph{nil}, \emph{nil}\-
+\\	$m\gets \lceil n/2 \rceil$
+\\	\emph{lmax,$(a_{i,l}, b_{i,l})$,$(a_{j,l}, b_{j,l})$} $\gets \textsc{Recurse(\emph{A[$0$:$m$-$1$], B[$0$:$m$-$1$], $m$})}$
+\\	\emph{rmax,$(a_{i,r}, b_{i,r})$,$(a_{j,r}, b_{j,r})$} $\gets \textsc{Recurse(\emph{A[$m$:$n$-$1$], B[$m$:$n$-$1$], $n$-$m$})}$
+\\	$(a_i, b_i)\gets (0, -\infty)$
+\\	for $k\gets 0$ to $m$-$1$\+
+\\	if \emph{B[$k$] }$>b_i$\+
+\\	$(a_i, b_i)\gets \emph{(A[$k$], B[$k$])}$\-\-
+\\	\emph{crossmax} $\gets 0$
+\\	for $k\gets m$ to $n$-$1$\+
+\\	\emph{overlap} $\gets \text{max\{$0$, min($b_i$, \emph{B[k]}) - \emph{A[k]}\}}$
+\\	if $\emph{overlap} > \emph{crossmax}$\+
+\\	$\emph{crossmax} \gets \emph{overlap}$
+\\	$(a_j, b_j)\gets \emph{(A[k], B[k])}$\-\-
+\\	if $\emph{rmax} \geq \emph{crossmax}$ and $\emph{rmax} \geq \emph{lmax}$\+
+\\	return \emph{rmax}, $(a_{i,r}, b_{i,r})$, $(a_{j,r}, b_{j,r})$\-
+\\	else if $\emph{lmax} \geq \emph{crossmax}$ and $\emph{lmax} \geq \emph{rmax}$\+
+\\	return \emph{lmax}, $(a_{i,l}, b_{i,l})$, $(a_{j,l}, b_{j,l})$\-
+\\	else\+
+\\	return \emph{crossmax}, $(a_i, b_i)$, $(a_j, b_j)$\-
+\end{algo}
+The algorithm returns two intervals $(a_i, b_i)$ and $(a_j, b_j)$. If no intervals overlap, the algorithm returns \emph{nil, nil}. The recurrence relation for \textsc{Recurse} is $T(n)=2T(n/2) + O(n)$, which gives $T(n)=O(n\log{n})$. The time complexity of sorting is $O(n\log{n})$. Therefore, the total time complexity of \textsc{MaxOverlapIntervals} is $O(1)+O(n\log{n})+O(n\log{n})=O(n\log{n})$.
+\end{solution}
+
+% ---------------------------------------------------------
+\HomeworkHeader{5}{2}
+
+\begin{solution}
+\begin{enumerate}[(a)]
+\item
+Let $K$ represent the ranks $k_1, k_2, ..., k_h$. We begin by splitting $K$ into two halves, $K_l$ and $K_r$. We then find the rank $K_r[0]$ element in $A$ and call it $m$. Then we can divide $A$ into $A_l$ and $A_g$ where $\text{max}(A_l)<m$ and $\text{min}(A_g)\geq m$. Then we subtract everything in $K_r$ by $K_r[0]$ such that $K_r$ starts with $0$. Then we can recursively apply the algorithm on $A_l, K_l$ and $A_g, K_r$ and denote the return values as $B_l$ and $B_r$. The concatenation $B_lB_r$ is the elements of rank $K$ in $A$ since every element is $B_r$ is greater than any element in $B_l$. The base case is when $h=1$, $K=\{k_1\}$, therefore the algorithm returns the set of the $k_1\text{\emph{th}}$ smallest element in $A$. The algorithm is shown below.\\
+\emph{Note: Zero-based indices are used.}
+\begin{algo}
+	\textul{\textsc{ElementsOfRank}($\emph{A, K, h}$):}\+
+\\	if $h=0$\+
+\\	return \emph{nil}\-
+\\	if $h=1$\+
+\\	$b\gets \text{$K[0]$\emph{th} smallest element in \emph{A}}$
+\\	return $[b]$\-
+\\	$p\gets \lceil h/2 \rceil$
+\\	$K_l\gets K[0:p-1]$; $K_r\gets K[p:h-1]$
+\\	$q\gets K_r[0]$
+\\	$m\gets \text{$q$\emph{th} smallest element in \emph{A}}$
+\\	$A_l\gets [\,]$; $A_g\gets [\,]$
+\\	for each $a\in A$\+
+\\	if $a<m$\+
+\\	add $a$ to $A_l$\-
+\\	else\+
+\\	add $a$ to $A_g$\-\-
+\\	for $i\gets 0$ to $h-p-1$\+
+\\	$K_r[i]\gets K_r[i] - q$\-
+\\	$B_l\gets \textsc{ElementsOfRank($A_l, K_l, p$)}$
+\\	$B_r\gets \textsc{ElementsOfRank($A_g, K_r, h-p$)}$
+\\	return $B_lB_r$    //concatenation
+\end{algo}
+From the algorithm we can write the recurrence $T(h)=2T(h/2)+O(n)+O(h)$ and $T(1)=O(n)$ since selection costs $O(n)$. However, there is a lower bound. Consider the recursion tree. The depth of the tree is $\log{h}$. Although the array $A$ is split randomly during each recursion, it must be true that the sum of the work on each level is $O(n)+O(h)=O(n)$ because only linear operations are involved with $A$ so no matter how $A$ is split the sum is still $O(|A|)$. Therefore the time complexity $=\emph{work on each level}\times \emph{number of levels} = O(n\log{h})$.
+
+% HW 5 Problem 2 (b)
+\item
+We begin by calculating the mid indices of all four arrays, $m_1, m_2, m_3, m_4$.
+\begin{itemize}
+\item
+If $m_1+m_2+m_3+m_4<k$, then since all the arrays are sorted, at least one subarray $A_1[1:m_1], A_2[1:m_2], A_3[1:m_3], A_4[1:m_4]$ can be dismissed. The one with the smallest number at index $m_i$ should be dismissed since it would be filled first. Then we adjust $k\gets k-m_i$ and recurse on the adjusted arrays.
+\item
+If $m_1+m_2+m_3+m_4\ge k$, let $n_i$ be the length of $A_i$, then similarly the subarray $A_i[m_i:n_i]$ with the largest number at index $m_i$ should be dismissed since reaching it would require $k> m_1+m_2+m_3+m_4$ which is a contradiction. Then we recurse on $k$ and the adjusted arrays.
+\end{itemize}
+The base case is when exactly one array is non-empty, the algorithm returns the $k$\emph{th} element of that array.
+\end{enumerate}
+\begin{algo}
+	\textul{\textsc{FindKthRank($A_1, A_2, A_3, A_4, k$):}}\+
+\\	if exactly one $A_i$ is non-empty\+
+\\	return $A_i[k]$\-
+\\	$n_1\gets A_1.\emph{length}$; $n_2\gets A_2.\emph{length}$; $n_3\gets A_3.\emph{length}$; $n_4\gets A_4.\emph{length}$
+\\	$m_1\gets \lceil \frac{n_1}{2} \rceil$; $m_2\gets \lceil \frac{n_2}{2} \rceil$; $m_3\gets \lceil \frac{n_3}{2} \rceil$; $m_4\gets \lceil \frac{n_4}{2} \rceil$
+\\	if $m_1+m_2+m_3+m_4<k$\+
+\\	$p\gets \text{min}(A_1[m_1], A_2[m_2], A_3[m_3], A_4[m_4])$
+\\	for each $A_i\in \{A_1, A_2, A_3, A_4\}$\+
+\\	if $A_i$ is empty\+
+\\	continue\-
+\\	if $A_i[m_i]=p$\+
+\\	if $n_i > 1$\+
+\\	$A_i\gets A_i[m_i+1:n_i]$\-
+\\	else\+
+\\	$A_i\gets [\,]$\-
+\\	$k\gets k-m_i$
+\\	break\-\-
+\\	return \textsc{FindKthRank($A_1, A_2, A_3, A_4, k$)}\-
+\\	else\+
+\\	$p\gets \text{max}(A_1[m_1], A_2[m_2], A_3[m_3], A_4[m_4])$
+\\	for each $A_i\in \{A_1, A_2, A_3, A_4\}$\+
+\\	if $A_i$ is empty\+
+\\	continue\-
+\\	if $A_i[m_i]=p$\+
+\\	if $m_i>1$\+
+\\	$A_i\gets A_i[1:m_i-1]$\-
+\\	else\+
+\\	$A_i\gets [\,]$\-
+\\ 	break\-\-
+\\	return \textsc{FindKthRank($A_1, A_2, A_3, A_4, k$)}\-
+\end{algo}
+\emph{Time complexity analysis: }$T(1)=O(1)$ since we only need to retrieve one element from an array. Only one branch of the if-statement is executed, so there is exactly one recursive call in each function call. Let's just assume that each array $A_i$ has exactly $n$ elements which will be strictly larger than the actual situation. Then it takes $\lceil \log{n} \rceil+1$ iterations for each $A_i$ to be empty, hence $3(\lceil \log{n} \rceil+1) + \lceil \log{n} \rceil = 4\lceil \log{n} \rceil + 3$ iterations in total. Only $O(1)$ operations are involved during each iteration. Therefore, an upper bound for the time complexity is $O(\log{n})$.
+\begin{equation*}
+\end{equation*}
+\end{solution}
+
+
+\end{document}

@@ -1,0 +1,151 @@
+% ---------
+%  Compile with "pdflatex hw0".
+% --------
+%!TEX TS-program = pdflatex
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[11pt]{article}
+\usepackage{jeffe,handout,graphicx}
+\usepackage[utf8]{inputenc}		% Allow some non-ASCII Unicode in source
+
+% =========================================================
+%   Define common stuff for solution headers
+% =========================================================
+\Class{CS/ECE 374}
+\Semester{Spring 2023}
+\Authors{1}
+\AuthorOne{William Cheng}{shihuac2@illinois.edu}
+%\Section{}
+
+% =========================================================
+\begin{document}
+
+% ---------------------------------------------------------
+
+
+\HomeworkHeader{6}{1}	% homework number, problem number
+
+\begin{solution}
+\begin{enumerate}[(a)]
+\item
+Let $\emph{MinCost}(i)$ be the value of the minimum cost L-split of the substring $A[1...i]$ of string $A[1...n]$. If we know $\emph{MinCost}(k)$ for every $k\in [1, i-1]$, then we can calculate $\emph{MinCost}(i)$ by first finding a non-empty suffix of length $j$ that is in $L$. Then $\emph{MinCost}(i-j)+\emph{cost}(j)$ is the minimum cost if we accept $A[i-j...i]$ in the L-split. If no such suffix exists, then we let $\emph{MinCost}(i)=\infty$ because there is no valid L-split and any valid L-split will cost less. We then take the minimum cost of all possible splits to be $\emph{MinCost}(i)$. The base case is when $i=0$ and $A[1...0]=\epsilon\in L^*$, $\emph{MinCost}(i)=\emph{cost}(|\epsilon|)=0$. We can write the following recurrences.\\\\
+$\emph{MinCost}(i)=$\\
+\begin{math}
+  \left\{
+    \begin{array}{ll}
+		0 &i=0\\
+		\text{min}(\{\emph{MinCost}(i-j)+\emph{cost}(j)\mid j\in[1, i], A[(i-j+1)...i]\in L\}\cup \{\infty \}) &i>0
+    \end{array}
+  \right.
+\end{math}\\\\
+The result should be $\emph{MinCost}(n)$. If $\emph{MinCost}(n)=\infty$, then we know there is no valid L-split.
+\begin{algo}
+	\textul{\textsc{MinLSplitCost($A[1...n]$):}}\+
+\\	integer \emph{MinCost}[$n+1$]
+\\	$\emph{MinCost}[0]\gets 0$
+\\	for $i\gets 1$ to $n$\+
+\\	$\emph{currMin}\gets \infty$
+\\	for $j\gets 1$ to $i$\+
+\\	if $\text{IsStringInL}(A[(i-j+1)...i])$\+
+\\	if $\emph{MinCost}[i-j]+\emph{cost}(j) < \emph{currMin}$\+
+\\	$\emph{currMin}\gets \emph{MinCost}[i-j]+\emph{cost}(j)$\-\-\-
+\\	$\emph{MinCost}(i)\gets \emph{currMin}$\-
+\\	if $\emph{MinCost}[n] = \infty$\+
+\\	return "$w\notin L^*$!"\-
+\\	return $\emph{MinCost}[n]$\-
+\end{algo}
+Since there are $\sum_{k=1}^{n}{k}=O(n^2)$ iterations, and in each iteration $\text{IsStringInL(\,)}$ takes $O(n)$ time, the time complexity of this algorithm is $O(n^3)$.
+
+\item Consider the following induction steps of regular languages.
+\begin{itemize}
+\item If $r=(s)^*$, then we check if each non-empty suffix $w_i$ of $w$ matches $s$, by recursively calling the algorithm with $(w_i, s)$. If the suffix matches $s$, then we delete that suffix from $w$ to get $w_{trim}$ and recursively call the algorithm with $(w_{trim}, r)$. If any recursive call returns true, then the algorithm returns true.
+\item If $r=r_1+r_2$, then we recursively call the algorithm with $(w, r_1)$ and $(w, r_2)$. If $w$ can be matched by any of $r_1, r_2$, then the algorithm should return true.
+\item If $r=r_1r_2$, then we divide $w$ into two sections, $w_1, w_2$, and recursively call with $(w_1, r_1)$ and $(w_2, r_2)$. If both recursive calls return true, then the algorithm should return true. There are $|w|+1$ such divisions thus $2|w|+2$ recursive calls taking $\epsilon$ into account.
+\end{itemize}
+Then consider the base cases:
+\begin{itemize}
+\item If $w=\epsilon$ and $r=(s)^*$, then the algorithm returns true.
+\item If $w=a$ where $a\in \Sigma$ and $r=a$, then the algorithm returns true.
+\end{itemize}
+\begin{algo}
+	\textsc{\textul{IsStringInRegExp($w, r$):}}\+
+\\	if $w=\epsilon$ and $r=(s)^*$\+
+\\	return \textsc{True}\-
+\\	if $|w|=1$ and $w=r$\+
+\\	return \textsc{True}\-
+\\	$\emph{inRegExp}\gets \textsc{False}$
+\\	if $r=(s)^*$\+
+\\	for each non-empty suffix $w_i$ of $w$\+
+\\	if \textsc{IsStringInRegExp($w_i, s$)}\+
+\\	$w_{trim}\gets w$ without $w_i$ at the end
+\\	$\emph{inRegExp}\gets \emph{inRegExp} \lor \textsc{IsStringInRegExp($w_{trim}, r$)}$\-\-\-
+\\	else if $r=r_1+r_2$\+
+\\	$\emph{inRegExp}\gets \textsc{IsStringInRegExp($w, r_1$)} \lor \textsc{IsStringInRegExp($w, r_2$)}$\-
+\\	else if $r=r_1r_2$\+
+\\	for $i\gets 0$ to $|w|$\+
+\\	$w_1\gets w[1:i]\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,$ // $w[1:0]=\epsilon$
+\\	$w_2\gets w[i+1:|w|]\,\,\,\,\,\,\,\,\,\,$ // $w[|w|+1:|w|]=\epsilon$
+\\	if $\textsc{IsStringInRegExp($w_1, r_1$)} \text{ and } \textsc{IsStringInRegExp($w_2, r_2$)}$\+
+\\	$\emph{inRegExp}\gets \textsc{True}$\-\-\-
+\\	return \emph{inRegExp}
+\end{algo}
+\end{enumerate}
+\end{solution}
+
+% ---------------------------------------------------------
+\HomeworkHeader{6}{2}
+\begin{solution}
+Suppose Mr.Fox is now at booth $i$. To account for the possibility that any future value in $A[i+1...n]$ will change the optimal sequence of "Ring!" and "Ding!", we keep track of the number of consecutive "Ring!"s and "Ding!"s.\\
+Let $\emph{maxChicken}(i,j,k)$ be the maximum number of chickens that Mr.Fox can get when he is at booth $i$, with $j$ consecutive "Ring!"s and $k$ consecutive "Ding!"s before Mr.Fox reaches booth $i$. Note that exactly one of $j$ and $k$ must be $0$ because there cannot be consecutive "Ring!"s and "Ding!"s at the same time. The final result should be the maximum in the set $\{\emph{maxChicken}(n, j, k)\}$ since it contains all possible values when Mr.Fox reaches booth $n$. Consider the following cases:
+\begin{itemize}
+\item Mr.Fox is at booth $1$. There can be at most one consecutive "Ring!" or "Ding!", and the maximum numbers of chickens are $A[i]$ and $-A[i]$ respectively.
+\item Mr.Fox is at booth $i$ where $i>1$, and he has shouted $j$ consecutive "Ring!"s before he reaches booth $i$.
+\begin{itemize}
+\item This time he shouts "Ding!". Since Mr.Fox could have shouted $1$, $2$, or $3$ consecutive "Ring!"s before, the maximum number of chickens in this situation is the maximum of $\{\emph{maxChicken}(i-1,m,0)-A[i]\}$ where $1\le m \le 3$.
+\item This time he shouts "Ring!". By the rules, $j\le 2$ because otherwise the farmer would shoot Mr.Fox. Then the maximum number of chickens is just the maximum number of chickens at booth $i-1$ where Mr.Fox had shouted $j-1$ consecutive "Ring!"s plus $A[i]$.
+\end{itemize}
+\item Mr.Fox is at booth $i$ where $i>1$, and he has shouted $k$ consecutive "Ding!"s before he reaches booth $i$.
+\begin{itemize}
+\item This time he shouts "Ring!". Since Mr.Fox could have shouted $1$, $2$, or $3$ consecutive "Ding!"s before, the maximum number of chickens in this situation is the maximum of $\{\emph{maxChicken}(i-1,0,m)+A[i]\}$ where $1\le m \le 3$.
+\item This time he shouts "Ding!". By the rules, $k\le 2$ because otherwise the farmer would shoot Mr.Fox. Then the maximum number of chickens is just the maximum number of chickens at booth $i-1$ where Mr.Fox had shouted $k-1$ consecutive "Ding!"s minus $A[i]$.
+\end{itemize}
+\end{itemize}
+The recurrences are as follows:\\\\
+$\emph{maxChicken}(i,j,k)=$\\
+\begin{math}
+  \left\{
+    \begin{array}{ll}
+		A[i]&i=1,j=1,k=0\\
+		-A[i]&i=1,j=0,k=1\\
+		\text{max}(\{\emph{maxChicken}(i-1, 0, m)+A[i]\mid 1\le m \le 3\})&i>1,j=1,k=0\\
+		\text{max}(\{\emph{maxChicken}(i-1, m, 0)-A[i]\mid 1\le m \le 3\})&i>1,j=0,k=1\\
+		\emph{maxChicken}(i-1, j-1, 0)+A[i]&i>1,j>1,k=0\\
+		\emph{maxChicken}(i-1, 0, k-1)-A[i]&i>1,j=0,k>1\\
+		-\infty&\text{otherwise}
+    \end{array}
+  \right.
+\end{math}\\\\
+Note that only $j$ and $k$ confined to $[0,3]$ should be considered in the above recurrence relations according to the rules. Invalid values are initialized to $-\infty$ because any valid value would be larger and would therefore be taken. Following is the pseudocode for the algorithm. \emph{Note: To be consistent with the recurrence relation above, the array \textbf{maxChicken}'s first index is $1$-based, while the second and third indices are $0$-based.}
+\begin{algo}
+	\textsc{\textul{LargestNumOfChickens($A[1...n]$):}}\+
+\\	integer $\emph{maxChicken}[n][4][4]$
+\\	initialize \emph{maxChicken} with $-\infty$
+\\	$\emph{maxChicken}[1][1][0]\gets A[1]$
+\\	$\emph{maxChicken}[1][0][1]\gets -A[1]$
+\\	for $i\gets 2$ to $n$\+
+\\	$\emph{maxChicken}[i][0][1]\gets \text{max}(\emph{maxChicken}[i-1][m][0]\text{ for $m\gets 1$ to $3$}) - A[i]$
+\\	$\emph{maxChicken}[i][1][0]\gets \text{max}(\emph{maxChicken}[i-1][0][m]\text{ for $m\gets 1$ to $3$}) + A[i]$
+\\	for $j\gets 2$ to $3$\+
+\\	$\emph{maxChicken}[i][j][0]\gets \emph{maxChicken}[i-1][j-1][0] + A[i]$\-
+\\	for $k\gets 2$ to $3$\+
+\\	$\emph{maxChicken}[i][0][k]\gets \emph{maxChicken}[i-1][0][k-1] - A[i]$\-\-
+\\	$\emph{largestNumOfChickens}\gets \text{largest element in the $2$-d array \emph{maxChicken$[n]$}}$
+\\	if $\emph{largestNumOfChickens} < 0$\+
+\\	just shoot Mr.Fox before the obstable course since he would get shot anyway\-
+\\	return \emph{largestNumOfChickens}
+\end{algo}
+Since only constant-time operations are involved in each iteration of $i$ and there are $n-1$ such iterations, the time complexity of the algorithm is $O(n)$.
+\end{solution}
+
+
+\end{document}
